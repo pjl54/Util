@@ -25,8 +25,9 @@ for i=1:n/2;
     clear lx ly lxy dislong
 end
 
-plot(log10(1./(1:n/2)),log10(d))
+% plot(log10(1./(1:n/2)),log10(d))
 %plot((1:n/2),d,'o')
 eq=polyfit(log10(1./(1:n/2)),log10(d),1);
 %eq=polyfit((1:n/2),d,1)
+
 frac_dim=eq(1);

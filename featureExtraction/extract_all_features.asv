@@ -1,5 +1,5 @@
 % December 10 2018 - Fixed bug where objects too small to extract morph
-% feats from would be included as zeros for all morph features
+% feats from would b
 function [feats haralickImages] = extract_all_features(bounds,img,select,mask)
 %% Extracts features from nuclei/glandular bounds
 % bounds is a struct containing the centroid and boundary info
@@ -98,7 +98,7 @@ badglands = [];
 feats = zeros(length(gb_r),25);
 for j = 1:length(gb_r)
     %     try
-    if(numel([gb_r{j}]') > 4)
+    if(numel([gb_r{j}]') > 8)
         if size(gb_r{1},1) == 1
             [feat] = morph_features([gb_r{j}]',[gb_c{j}]');
         else
@@ -117,7 +117,7 @@ end
 
 feats(badglands,:) = []; %remove bad glands
 
-morphfeats = [nanmean(feats) nanstd(feats) nanmedian(feats) min(feats)./max(feats)];
+morphfeats = [mean(feats) std(feats) median(feats) min(feats)./max(feats)];
 
 
 

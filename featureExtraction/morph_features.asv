@@ -80,10 +80,8 @@ dratio      = distratio(xy);
 %area to perimeter ratio
 [paratio,peri]  = periarea(xy,area);
 
-% Will be infinite if area is 0, as in case of straight line
 if(paratio == Inf)
-%     warning('Infinite perimiter to area ratio');
-    paratio = nan;
+    fprintf('f')
 end
 
 %==========================================================================
@@ -127,13 +125,7 @@ phi = invmoments(B);
 %===========================
 % Get the fractal dimension
 
-% Will be infinite if two identical coordinates have one coordinate between
-% them
 frac_dim    = fractal_dim([x,y]);
-
-if(frac_dim == Inf)
-    frac_dim = nan;
-end
 
 %==========================================
 % Para are all the features that are extracted.   
