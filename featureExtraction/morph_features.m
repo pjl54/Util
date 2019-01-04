@@ -117,7 +117,9 @@ z = frdescpUncentered([x,y]);
 if(length(z) < 11)
     z(end+1:11) = nan;
 end
-fd  = z(2:11);
+
+% divide by sum(z) for scale invariance
+fd  = z(2:11)/nansum(z);
 
 %============
 % Invariant moments

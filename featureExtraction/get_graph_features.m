@@ -1,11 +1,13 @@
-function [vfeature,GraphFeatureDescription] = get_graph_features(x,y)
+% December 2018: Changed Voronoi exlusions to exclude verticies that are
+% outside the convex hull of points or supplied mask of tissue area
+function [vfeature,GraphFeatureDescription] = get_graph_features(x,y,mask)
 
 % graphfeats    Calculates graph-based features for nuclear centroids
-% located at (x,y) in the image. 
-% 
+% located at (x,y) in the image.
+%
 % Necessary input:
 % x,y: x and y coordinates of points that will be used for graph construction
-% (i.e. nuclear centroids). 
+% (i.e. nuclear centroids).
 
 % Output Description: vfeature contains the following:
 
@@ -68,7 +70,18 @@ function [vfeature,GraphFeatureDescription] = get_graph_features(x,y)
 % 50: Disorder of Nearest Neighbors in a 40 Pixel Radius
 % 51: Disorder of Nearest Neighbors in a 50 Pixel Radius
 
-%load('GraphFeatureDescription.mat')
+% Use whatever we were given to find the polygon in which voronoi verticies
+% are considered valid
+if(exist('mask','var'))
+    validHull = bwboundaries(mask);
+    validHull = validHull{1};
+else
+    K = boundary(x,y,.5);
+    validHull = [x(K),y(K)];
+end
+
+
+% load('GraphFeatureDescription.mat')
 
 % Calculate the Voronoi diagram.
 [VX,VY] = voronoi(x,y);
@@ -81,7 +94,7 @@ function [vfeature,GraphFeatureDescription] = get_graph_features(x,y)
 
 % C - This variable is an m by 1 cell array, where m is the number of cell
 % centroids in your image. Each element in C is a vector
-% with the coordinates of the vertices of that row's voronoi polygon. 
+% with the coordinates of the vertices of that row's voronoi polygon.
 % V - This is a q by 2 matrix, where q is the number of vertices and 2 is
 % the number of dimensions of your image. Each element in V contains the
 % location of the vertex in 2D space.
@@ -92,14 +105,18 @@ function [vfeature,GraphFeatureDescription] = get_graph_features(x,y)
 % of polygon 5.
 
 % Get the delaunay triangulation...
-del = delaunay(x,y);    
+delK = K;
+delConstrain = [delK(1:end-1),delK(2:end)];
+DT = delaunayTriangulation(x,y,delConstrain);
+IO = isInterior(DT);
+del = DT.ConnectivityList(IO,:);
 
-% Returns a set of triangles such that no data points are contained in any 
-% triangle's circumcircle. Each row of the numt-by-3 matrix TRI defines 
-% one such triangle and contains indices into the vectors X and Y. When 
-% the triangles cannot be computed (such as when the original data is 
+% Returns a set of triangles such that no data points are contained in any
+% triangle's circumcircle. Each row of the numt-by-3 matrix TRI defines
+% one such triangle and contains indices into the vectors X and Y. When
+% the triangles cannot be computed (such as when the original data is
 % collinear, or X is empty), an empty matrix is returned.
-    
+
 % Get the Minimum Spanning Tree (MST) (optional: plot)
 [mst.edges mst.edgelen mst.totlen] = mstree([x,y],[],0);
 
@@ -107,35 +124,10 @@ del = delaunay(x,y);
 Vnew        = V;
 Vnew(1,:)   = [];
 
-% Find the data points that lie far outside the range of the data
-[Vsorted,I]     = sort([Vnew(:,1);Vnew(:,2)]);
-N               = length(Vsorted);
-Q1              = round(0.25*(N+1));
-Q3              = round(0.75*(N+1));
-IQR             = Q3 - Q1;
-highrange       = Q3 + 1.5*IQR;
-lowrange        = Q1 - 1.5*IQR;
-Vextreme        = [];
-Vextreme        = [Vextreme; V(find(V > highrange))];
-Vextreme        = [Vextreme; V(find(V < lowrange))];
-
 banned = [];
 for i = 1:length(C)
-    if(~isempty(C{i}))
-        
-    if(max(any(isinf(V(C{i},:)))) == 1 || max(max(ismember(V(C{i},:),Vextreme))) == 1)
+    if(~inpolygon(V(i,1),V(i,2),validHull(:,1),validHull(:,2)))
         banned = [banned, i];
-    end
-    end
-end
-% If you've eliminated the whole thing (or most of it), then only ban 
-% indices that are infinity (leave the outliers)
-if(length(banned) > length(C)-2)
-    banned = [];
-    for i = 1:length(C)
-        if(max(any(isinf(V(C{i},:)))) == 1)
-            banned = [banned, i];
-        end
     end
 end
 
@@ -145,8 +137,9 @@ c = 1;
 d = 1;
 e = d;
 for i = 1:length(C)
-
-    if(~ismember(i,banned) && ~isempty(C{i}))
+    
+    % exclude polygon if any of its verticies are banned
+    if(isempty(intersect(C{i},banned)))
         X = V(C{i},:);
         chord(1,:) = X(:,1);
         chord(2,:) = X(:,2);
@@ -157,7 +150,7 @@ for i = 1:length(C)
                 d = d + 1;
             end
         end
-
+        
         % Calculate perimeter distance (each point to each nearby point)
         for ii = 1:size(X,1)-1
             perimdist(e) = sqrt((X(ii,1) - X(ii+1,1))^2 + (X(ii,2) - X(ii+1,2))^2);
@@ -173,9 +166,9 @@ for i = 1:length(C)
 end
 if(~exist('area','var'))
     vfeature = zeros(1,51);
-    return; 
+    return;
 end
-vfeature(1) = std(area); 
+vfeature(1) = std(area);
 vfeature(2) = mean(area);
 vfeature(3) = min(area) / max(area);
 vfeature(4) = 1 - ( 1 / (1 + (vfeature(1) / vfeature(2))) );
@@ -190,7 +183,7 @@ vfeature(10) = mean(chorddist);
 vfeature(11) = min(chorddist) / max(chorddist);
 vfeature(12) = 1 - ( 1 / (1 + (vfeature(9) / vfeature(10))) );
 
-% Delaunay 
+% Delaunay
 % Edge length and area
 c = 1;
 d = 1;
@@ -207,7 +200,7 @@ for i = 1:size(del,1)
 end
 
 vfeature(13) = min(sidelen) / max(sidelen);
-vfeature(14) = std(sidelen); 
+vfeature(14) = std(sidelen);
 vfeature(15) = mean(sidelen);
 vfeature(16) = 1 - (1 / (1 + (vfeature(14) / vfeature(15)) ) );
 
@@ -224,29 +217,38 @@ vfeature(20) = 1 - (1 / (1 + (vfeature(18) / vfeature(19))) );
 vfeature(21) = mean(mst.edgelen);
 vfeature(22) = std(mst.edgelen);
 vfeature(23) = min(mst.edgelen) / max(mst.edgelen);
-vfeature(24) = 1 - ( 1 / ( 1 + (vfeature(22)/vfeature(21)) ) ); 
+vfeature(24) = 1 - ( 1 / ( 1 + (vfeature(22)/vfeature(21)) ) );
 
 % Nuclear Features
 % Density
-vfeature(25) = sum(area); 
+vfeature(25) = sum(area);
 vfeature(26) = size(C,1);
 vfeature(27) = vfeature(26) / vfeature(25);
 
 % Average Distance to K-NN
 % Construct N x N distance matrix:
-for i = 1:size(x,1)
+
+% Exclude boundary pixels
+edgeObjects = boundary(x,y,1);
+
+distmat = zeros(size(x,1)-length(edgeObjects),size(x,1));
+distFroms = 1:size(x,1);
+distFroms(edgeObjects) = [];
+distTos = 1:size(x,1);
+
+for i = 1:length(distFroms)
     for j = 1:size(x,1)
-        distmat(i,j) = sqrt( (x(i) - x(j))^2 + (y(i) - y(j))^2 );
+        distmat(i,j) = sqrt( (x(distFroms(i)) - x(j))^2 + (y(distFroms(i)) - y(j))^2 );
     end
 end
 DKNN = zeros(3,size(distmat,1));
 kcount = 1;
 for K = [3,5,7]
     % Calculate the summed distance of each point to it's K nearest neighbours
-
+    
     for i = 1:size(distmat,1)
         tmp = sort(distmat(i,:),'ascend');
-
+        
         % NOTE: when finding the summed distance, throw out the first result,
         % since it's the zero value at distmat(x,x). Add 1 to K to compensate.
         DKNN(kcount,i) = sum(tmp(2:K+1));
@@ -269,10 +271,10 @@ vfeature(36) = 1 - (1 / ( 1 + (vfeature(33) / (vfeature(30)+eps)) ));
 % Set the number of pixels within which to search
 rcount = 1;
 for R = [10:10:50]
-
+    
     % For each point, find the number of neighbors within R pixels
     for i = 1:size(distmat,1)
-
+        
         % NOTE: as above with the K-NN calculation, we subtract 1 from the
         % number of pixels found, because this corresponds to the diagonal of
         % the distance matrix, which is always 0 (i.e. distmat(x,x) = 0 for all
@@ -316,8 +318,8 @@ vfeature(51) = NNRR_dis_50;
 %
 %         crds =    [N x p] matrix of point coordinates.
 %         labels =  optional [N x 1] vector of numeric or character labels.
-%         doplot =  optional boolean flag indicating whether (=1) or not (=0) 
-%                     to plot the points and minimum spanning tree in the space 
+%         doplot =  optional boolean flag indicating whether (=1) or not (=0)
+%                     to plot the points and minimum spanning tree in the space
 %                     of the first two axes [default = 0].
 %         ---------------------------------------------------------------------
 %         edges =   [(N-1) x 2] list of points defining edges.
@@ -337,68 +339,68 @@ vfeature(51) = NNRR_dis_50;
 %   12/9/03 -  added optional plot labels.
 
 function [edges,edgelen,totlen] = mstree(crds,labels,doplot)
-  if (nargin < 2) labels = []; end;
-  if (nargin < 3) doplot = []; end;
+if (nargin < 2) labels = []; end;
+if (nargin < 3) doplot = []; end;
 
-  [n,p] = size(crds);
+[n,p] = size(crds);
 
-  if (isempty(doplot) | p<2)
+if (isempty(doplot) | p<2)
     doplot = 0;
-  end;
-  
-  if (~isempty(labels))
+end;
+
+if (~isempty(labels))
     if (~ischar(labels))
-      labels = tostr(labels(:));
+        labels = tostr(labels(:));
     end;
-  end;
+end;
 
-  totlen = 0;
-  edges = zeros(n-1,2);
-  edgelen = zeros(n-1,1);
+totlen = 0;
+edges = zeros(n-1,2);
+edgelen = zeros(n-1,1);
 
-  dist = eucl(crds);            % Pairwise euclidean distances
-  highval = max(max(dist))+1;
+dist = eucl(crds);            % Pairwise euclidean distances
+highval = max(max(dist))+1;
 
 
-  e1 = 1*ones(n-1,1);           % Initialize potential-edge list
-  e2 = [2:n]';
-  ed =  dist(2:n,1);
+e1 = 1*ones(n-1,1);           % Initialize potential-edge list
+e2 = [2:n]';
+ed =  dist(2:n,1);
 
-  for edge = 1:(n-1)            % Find shortest edges
+for edge = 1:(n-1)            % Find shortest edges
     [mindist,i] = min(ed);        % New edge
     t = e1(i);
     u = e2(i);
     totlen = totlen + mindist;
     if (t<u)                      % Add to actual-edge list
-      edges(edge,:) = [t u];
+        edges(edge,:) = [t u];
     else
-      edges(edge,:) = [u t];
+        edges(edge,:) = [u t];
     end;
     edgelen(edge) = mindist;
-
+    
     if (edge < n-1)
-      i = find(e2==u);              % Remove new vertex from
-      e1(i) = 0;                    %   potential-edge list
-      e2(i) = 0;
-      ed(i) = highval;
-
-      indx = find(e1>0);
-      for i = 1:length(indx)        % Update potential-edge list
-        j = indx(i);
-        t = e1(j);
-        v = e2(j);
-        if (dist(u,v) < dist(t,v))
-          e1(j) = u;
-          ed(j) = dist(u,v);
+        i = find(e2==u);              % Remove new vertex from
+        e1(i) = 0;                    %   potential-edge list
+        e2(i) = 0;
+        ed(i) = highval;
+        
+        indx = find(e1>0);
+        for i = 1:length(indx)        % Update potential-edge list
+            j = indx(i);
+            t = e1(j);
+            v = e2(j);
+            if (dist(u,v) < dist(t,v))
+                e1(j) = u;
+                ed(j) = dist(u,v);
+            end;
         end;
-      end;
     end;
-  end;
-  
-  v = rowtoval(edges);
-  [v,edges,edgelen] = sortmat(v,edges,edgelen);  % Sort by increasing pt identifier
+end;
 
-  if (doplot)
+v = rowtoval(edges);
+[v,edges,edgelen] = sortmat(v,edges,edgelen);  % Sort by increasing pt identifier
+
+if (doplot)
     figure;
     plot(crds(:,1),crds(:,2),'ok');
     putbnd(crds(:,1),crds(:,2));
@@ -406,28 +408,28 @@ function [edges,edgelen,totlen] = mstree(crds,labels,doplot)
     deltax = 0.018*range(crds(:,1));
     deltay = 0.02*range(crds(:,2));
     for i = 1:n
-      if (isempty(labels))
-        lab = int2str(i);
-      else
-        lab = labels(i,:);
-      end;
-%       text(crds(i,1)+deltax,crds(i,2)+deltay,lab);
+        if (isempty(labels))
+            lab = int2str(i);
+        else
+            lab = labels(i,:);
+        end;
+        %       text(crds(i,1)+deltax,crds(i,2)+deltay,lab);
     end;
     
     hold on;
     for i = 1:(n-1)
-      t = edges(i,1);
-      u = edges(i,2);
-      x = [crds(t,1); crds(u,1)];
-      y = [crds(t,2); crds(u,2)];
-      plot(x,y,'-k');
+        t = edges(i,1);
+        u = edges(i,2);
+        x = [crds(t,1); crds(u,1)];
+        y = [crds(t,2); crds(u,2)];
+        plot(x,y,'-k');
     end;
     hold off;
-  end;
+end;
 
-  return;
+return;
 % EUCL: Calculates the euclidean distances among a set of points, or between a
-%       reference point and a set of points, or among all possible pairs of two 
+%       reference point and a set of points, or among all possible pairs of two
 %       sets of points, in P dimensions.  Returns a single distance for two points.
 %
 %     Syntax: dists = eucl(crds1,crds2)
@@ -460,96 +462,96 @@ function [edges,edgelen,totlen] = mstree(crds,labels,doplot)
 %   11/11/03 - initialize dists to NaN for error return.
 
 function dists = eucl(crds1,crds2)
-  if (~nargin) help eucl; return; end;
-  dists = NaN;
+if (~nargin) help eucl; return; end;
+dists = NaN;
 
-  if (nargin < 2)                     % If only crds1 provided,
+if (nargin < 2)                     % If only crds1 provided,
     [N,P] = size(crds1);
     if (N<2)
-      error('  EUCL: need at least two points');
+        error('  EUCL: need at least two points');
     end;
-
+    
     crds1 = crds1';                     % Transpose crds
     dists = zeros(N,N);                 % Calculate pairwise distances
-
+    
     for i = 1:N-1
-      c1 = crds1(:,i) * ones(1,N-i);
-      if (P>1)
-        d = sqrt(sum((c1-crds1(:,(i+1:N))).^2));
-      else
-        d = abs(c1-crds1(:,(i+1:N)));
-      end;
-      dists(i,(i+1:N)) = d;
-      dists((i+1:N),i) = d';
+        c1 = crds1(:,i) * ones(1,N-i);
+        if (P>1)
+            d = sqrt(sum((c1-crds1(:,(i+1:N))).^2));
+        else
+            d = abs(c1-crds1(:,(i+1:N)));
+        end;
+        dists(i,(i+1:N)) = d;
+        dists((i+1:N),i) = d';
     end;
     if (N==2)                            % Single distance for two points
-      dists = dists(1,2);
+        dists = dists(1,2);
     end;
-
-  else                                % If crds1 & crds2 provided,
+    
+else                                % If crds1 & crds2 provided,
     [N1,P1] = size(crds1);
     [N2,P2] = size(crds2);
     if (P1~=P2)
-      error('  EUCL: sets of coordinates must be of same dimension');
+        error('  EUCL: sets of coordinates must be of same dimension');
     else
-      P = P1;
+        P = P1;
     end;
-
+    
     crds1 = crds1';                     % Transpose crds
     crds2 = crds2';
-
+    
     if (N1>1 & N2>1)                    % If two matrices provided,
-      dists = zeros(N1,N2);               % Calc all pairwise distances between them
-      for i = 1:N1
-        c1 = crds1(:,i) * ones(1,N2);
-        if (P>1)
-          d = sqrt(sum((c1-crds2).^2));
-        else
-          d = abs(c1-crds2);
+        dists = zeros(N1,N2);               % Calc all pairwise distances between them
+        for i = 1:N1
+            c1 = crds1(:,i) * ones(1,N2);
+            if (P>1)
+                d = sqrt(sum((c1-crds2).^2));
+            else
+                d = abs(c1-crds2);
+            end;
+            dists(i,:) = d;
         end;
-        dists(i,:) = d;
-      end;
     end;
-
+    
     if (N1==1 & N2==1)                  % If two vectors provided,
-      dists = sqrt(sum((crds1-crds2).^2));  % Calc scalar
+        dists = sqrt(sum((crds1-crds2).^2));  % Calc scalar
     end;
-
+    
     if (N1>1 & N2==1)                   % If matrix & reference point provided,
-      crds1 = crds1 - (ones(N1,1)*crds2')'; % Center points on reference point
-      if (P>1)                              % Calc euclidean distances in P-space
-         dists = sqrt(sum(crds1.^2))';
-      else
-         dists = abs(crds1)';
-      end;
+        crds1 = crds1 - (ones(N1,1)*crds2')'; % Center points on reference point
+        if (P>1)                              % Calc euclidean distances in P-space
+            dists = sqrt(sum(crds1.^2))';
+        else
+            dists = abs(crds1)';
+        end;
     end;                                    % Return column vector
-
+    
     if (N1==1 & N2>1)                   % If reference point & matrix provided,
-      crds2 = crds2 - (ones(N2,1)*crds1')'; % Center points on reference point
-      if (P>1)                              % Calc euclidean distances in P-space
-        dists = sqrt(sum(crds2.^2));
-      else
-        dists = abs(crds2);
-      end;
+        crds2 = crds2 - (ones(N2,1)*crds1')'; % Center points on reference point
+        if (P>1)                              % Calc euclidean distances in P-space
+            dists = sqrt(sum(crds2.^2));
+        else
+            dists = abs(crds2);
+        end;
     end;                                    % Return row vector
-  end;
+end;
 
-  return;
+return;
 
-% PUTBND: Changes the [min,max] settings for both axes to allow a buffer 
-%         beyond the range of the data.  If a single matrix of point coordinates 
+% PUTBND: Changes the [min,max] settings for both axes to allow a buffer
+%         beyond the range of the data.  If a single matrix of point coordinates
 %         is given, columns beyond the second are ignored.
 %
-%     Syntax: v = putbnd(x,y,{buffer},{nocall}) 
-%                   OR 
+%     Syntax: v = putbnd(x,y,{buffer},{nocall})
+%                   OR
 %             v = putbnd([x y],buffer,{nocall})
 %
 %          x =      vector of x coordinates.
 %          y =      vector of y coordinates.
-%          buffer = optional buffer size, as proportion of ranges 
+%          buffer = optional buffer size, as proportion of ranges
 %                     [default = 0.05].
-%          nocall = optional boolean flag indicating, if true, that the axis 
-%                     settings are to be returned but that the current plot is 
+%          nocall = optional boolean flag indicating, if true, that the axis
+%                     settings are to be returned but that the current plot is
 %                     to be left unaltered [default = 0].
 %          -------------------------------------------------------------------
 %          v =      axis bounds: [xmin xmax ymin ymax].
@@ -564,66 +566,66 @@ function dists = eucl(crds1,crds2)
 %   5/23/01 -  add 'nocall' option.
 
 function v = putbnd(x,y,buffer,nocall)
-  if (nargin < 2) y = []; end;
-  if (nargin < 3) buffer = []; end;
-  if (nargin < 4) nocall = []; end;
+if (nargin < 2) y = []; end;
+if (nargin < 3) buffer = []; end;
+if (nargin < 4) nocall = []; end;
 
-  if (isempty(y) | isscalar(y))
+if (isempty(y) | isscalar(y))
     nocall = buffer;
     buffer = y;
     if (size(x,2)>=2)
-      y = x(:,2);
-      x = x(:,1);
+        y = x(:,2);
+        x = x(:,1);
     else
-      error('  PUTBND: invalid point coordinates');
+        error('  PUTBND: invalid point coordinates');
     end;
-  end;
+end;
 
-  x = x(:);
-  y = y(:);
-  if (length(x) ~= length(y))
+x = x(:);
+y = y(:);
+if (length(x) ~= length(y))
     error('  PUTBND: lengths of coordinate vectors are incompatible.');
-  end;
+end;
 
-  if (isempty(buffer))
+if (isempty(buffer))
     buffer = 0.05;
-  end;
-  if (isempty(nocall))
+end;
+if (isempty(nocall))
     nocall = 0;
-  end;
+end;
 
-  % Remove NaN's
-  indx = (isfinite(x) & isfinite(y));
-  x = x(indx);
-  y = y(indx);
+% Remove NaN's
+indx = (isfinite(x) & isfinite(y));
+x = x(indx);
+y = y(indx);
 
-  v = zeros(1,4);
-  v(1) = min(x)-buffer*range(x);
-  v(2) = max(x)+buffer*range(x);
-  v(3) = min(y)-buffer*range(y);
-  v(4) = max(y)+buffer*range(y);
+v = zeros(1,4);
+v(1) = min(x)-buffer*range(x);
+v(2) = max(x)+buffer*range(x);
+v(3) = min(y)-buffer*range(y);
+v(4) = max(y)+buffer*range(y);
 
-  if (v(2)-v(1) < eps)      % No variation in x
+if (v(2)-v(1) < eps)      % No variation in x
     v(1) = x(1)-1;
     v(2) = x(1)+1;
-  end;
-  if (v(4)-v(3) < eps)      % No variation in y
+end;
+if (v(4)-v(3) < eps)      % No variation in y
     v(3) = y(1)-1;
     v(4) = y(1)+1;
-  end;
+end;
 
-  if (~nocall)
+if (~nocall)
     axis(v);
-  end;
+end;
 
-  return;
-  
+return;
+
 function y = range(x)
 % Calculates the range of x
 y = abs(max(x) - min(x));
 
-% Rowtoval: Converts rows of a matrix (numeric or character) to a vector of 
-%           scalars.  Useful for checking for identical rows or for sorting 
+% Rowtoval: Converts rows of a matrix (numeric or character) to a vector of
+%           scalars.  Useful for checking for identical rows or for sorting
 %           rows into lexicological sequence [but see sortrows() for the latter].
 %
 %     Usage: [vals,base] = rowtoval(x,{base})
@@ -640,25 +642,25 @@ y = abs(max(x) - min(x));
 %   5/5/06 -  convert input matrix to numeric before processing.
 
 function [vals,base] = rowtoval(x,base)
-  if (nargin < 2) base = []; end;
+if (nargin < 2) base = []; end;
 
-  x = double(x);
-  [r,c] = size(x);
-  xmin = min(min(x));
-  x = x - xmin;
-  if (isempty(base))
+x = double(x);
+[r,c] = size(x);
+xmin = min(min(x));
+x = x - xmin;
+if (isempty(base))
     base = max(max(x))+1;
-  end;
+end;
 
-  vals = zeros(r,1);
-  for i = 1:c
+vals = zeros(r,1);
+for i = 1:c
     vals = vals + x(:,i)*base^(c-i);
-  end;
+end;
 
-  return;
-  
-  
-  % SORTMAT:  Sorts a primary "key" column vector, and re-sequences the rows of 
+return;
+
+
+% SORTMAT:  Sorts a primary "key" column vector, and re-sequences the rows of
 %           one or more secondary matrices into the corresponding sequence.
 %
 %     Usage: [outvect,outmat1,...,outmat9] = sortmat(invect,inmat1,{inmat2},...,{inmat9})
@@ -680,115 +682,115 @@ function [vals,base] = rowtoval(x,base)
 %
 
 function [outvect,outmat1,outmat2,outmat3,outmat4,outmat5,outmat6,outmat7,outmat8,outmat9] ...
-            = sortmat(invect,inmat1,inmat2,inmat3,inmat4,inmat5,inmat6,inmat7,inmat8,inmat9)
+    = sortmat(invect,inmat1,inmat2,inmat3,inmat4,inmat5,inmat6,inmat7,inmat8,inmat9)
 
-  if (nargin ~= nargout)
+if (nargin ~= nargout)
     error('SORTMAT: number of output arguments must match number of input arguments');
-  end;
+end;
 
-  [r,c] = size(invect);
-  if (c>1)
+[r,c] = size(invect);
+if (c>1)
     if (r>1)
-      error('SORTMAT: first input argument must be a column vector');
+        error('SORTMAT: first input argument must be a column vector');
     else
-      invect = invect';
-      r = c;
+        invect = invect';
+        r = c;
     end;
-  end;
+end;
 
-  outmat1 = [];
-  outmat2 = [];
-  outmat3 = [];
-  outmat4 = [];
-  outmat5 = [];
-  outmat6 = [];
-  outmat7 = [];
-  outmat8 = [];
-  outmat9 = [];
+outmat1 = [];
+outmat2 = [];
+outmat3 = [];
+outmat4 = [];
+outmat5 = [];
+outmat6 = [];
+outmat7 = [];
+outmat8 = [];
+outmat9 = [];
 
-  [outvect,seq] = sort(invect);
+[outvect,seq] = sort(invect);
 
-  if (nargin > 1)
+if (nargin > 1)
     if (~isempty(inmat1))
-      if (size(inmat1,1) ~= r)
-        error('SORTMAT: <inmat1> must have same number of rows as <invect>');
-      end;
-      outmat1 = inmat1(seq,:);
+        if (size(inmat1,1) ~= r)
+            error('SORTMAT: <inmat1> must have same number of rows as <invect>');
+        end;
+        outmat1 = inmat1(seq,:);
     end;
-  end;
+end;
 
-  if (nargin > 2)
+if (nargin > 2)
     if (~isempty(inmat2))
-      if (size(inmat2,1) ~= r)
-        error('SORTMAT: <inmat2> must have same number of rows as <invect>');
-      end;
-      outmat2 = inmat2(seq,:);
+        if (size(inmat2,1) ~= r)
+            error('SORTMAT: <inmat2> must have same number of rows as <invect>');
+        end;
+        outmat2 = inmat2(seq,:);
     end;
-  end;
+end;
 
-  if (nargin > 3)
+if (nargin > 3)
     if (~isempty(inmat3))
-      if (size(inmat3,1) ~= r)
-        error('SORTMAT: <inmat3> must have same number of rows as <invect>');
-      end;
-      outmat3 = inmat3(seq,:);
+        if (size(inmat3,1) ~= r)
+            error('SORTMAT: <inmat3> must have same number of rows as <invect>');
+        end;
+        outmat3 = inmat3(seq,:);
     end;
-  end;
+end;
 
-  if (nargin > 4)
+if (nargin > 4)
     if (~isempty(inmat4))
-      if (size(inmat4,1) ~= r)
-        error('SORTMAT: <inmat4> must have same number of rows as <invect>');
-      end;
-      outmat4 = inmat4(seq,:);
+        if (size(inmat4,1) ~= r)
+            error('SORTMAT: <inmat4> must have same number of rows as <invect>');
+        end;
+        outmat4 = inmat4(seq,:);
     end;
-  end;
+end;
 
-  if (nargin > 5)
+if (nargin > 5)
     if (~isempty(inmat5))
-      if (size(inmat5,1) ~= r)
-        error('SORTMAT: <inmat5> must have same number of rows as <invect>');
-      end;
-      outmat5 = inmat5(seq,:);
+        if (size(inmat5,1) ~= r)
+            error('SORTMAT: <inmat5> must have same number of rows as <invect>');
+        end;
+        outmat5 = inmat5(seq,:);
     end;
-  end;
+end;
 
-  if (nargin > 6)
+if (nargin > 6)
     if (~isempty(inmat6))
-      if (size(inmat6,1) ~= r)
-        error('SORTMAT: <inmat6> must have same number of rows as <invect>');
-      end;
-      outmat6 = inmat6(seq,:);
+        if (size(inmat6,1) ~= r)
+            error('SORTMAT: <inmat6> must have same number of rows as <invect>');
+        end;
+        outmat6 = inmat6(seq,:);
     end;
-  end;
+end;
 
-  if (nargin > 7)
+if (nargin > 7)
     if (~isempty(inmat7))
-      if (size(inmat7,1) ~= r)
-        error('SORTMAT: <inmat7> must have same number of rows as <invect>');
-      end;
-      outmat7 = inmat7(seq,:);
+        if (size(inmat7,1) ~= r)
+            error('SORTMAT: <inmat7> must have same number of rows as <invect>');
+        end;
+        outmat7 = inmat7(seq,:);
     end;
-  end;
+end;
 
-  if (nargin > 8)
+if (nargin > 8)
     if (~isempty(inmat8))
-      if (size(inmat8,1) ~= r)
-        error('SORTMAT: <inmat8> must have same number of rows as <invect>');
-      end;
-      outmat8 = inmat8(seq,:);
+        if (size(inmat8,1) ~= r)
+            error('SORTMAT: <inmat8> must have same number of rows as <invect>');
+        end;
+        outmat8 = inmat8(seq,:);
     end;
-  end;
+end;
 
-  if (nargin > 9)
+if (nargin > 9)
     if (~isempty(inmat9))
-      if (size(inmat9,1) ~= r)
-        error('SORTMAT: <inmat9> must have same number of rows as <invect>');
-      end;
-      outmat9 = inmat9(seq,:);
+        if (size(inmat9,1) ~= r)
+            error('SORTMAT: <inmat9> must have same number of rows as <invect>');
+        end;
+        outmat9 = inmat9(seq,:);
     end;
-  end;
+end;
 
-  return;
+return;
 
 

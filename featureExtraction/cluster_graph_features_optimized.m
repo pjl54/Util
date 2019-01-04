@@ -56,6 +56,7 @@ else
     
     
     % pre-calculate shortest paths (8/24/2013)
+    pathlengths = cell(1,N);
     for i = 1:N
         distance = graphshortestpath(weighted,i);
         pathlengths{i} = nonzeros(distance(isfinite(distance))).';
@@ -91,7 +92,14 @@ end
     
 
    
-if length(pathlengths{1}) < 1, if isempty([pathlengths{:}]), for i = 1:N, pathlengths{i} = 0; fprintf('\nWarning: No edges found! All isolated nodes. Consider not using these features.'); end ; end; end
+if length(pathlengths{1}) < 1
+    if isempty([pathlengths{:}])
+        for i = 1:N
+            pathlengths{i} = 0; 
+            fprintf('\nWarning: No edges found! All isolated nodes. Consider not using these features.'); 
+        end ; 
+    end; 
+end
 if isempty(eccentricity), eccentricity = 0; end
 
 %5) Diameter
@@ -147,8 +155,10 @@ if ~exist('sym_edges','var')
 else
     [~,network] = graphconncomp(sym_edges);
     
+     En = zeros(1,length(network));
+     kn = zeros(1,length(network));
     for n=1:N
-        nodes = find(network==n);
+        nodes = find(network==n);        
         En(nodes) = sum(sum(edges(nodes, nodes)));
         kn(nodes) = length(nodes);
     end

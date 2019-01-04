@@ -1,6 +1,6 @@
 % Cheng corrected the way of calculating co-occurence matrix on line
 % 104-118
-function [CGT, c, info, feats,network,edges] = extract_CGT_features(bounds,a,r)
+function [CGT, c, info, feats,network,edges] = extract_CGT_features_v2(bounds,a,r)
 % compute the mean and standard deviation of CGTs across all bounds
 % c = co-occurrence matrix
 if nargin < 2

@@ -117,8 +117,8 @@ end
 
 feats(badglands,:) = []; %remove bad glands
 
-morphfeats = [nanmean(feats) nanstd(feats) nanmedian(feats) min(feats)./max(feats)];
-
+% morphfeats = [nanmean(feats) nanstd(feats) nanmedian(feats) min(feats)./max(feats)];
+morphfeats = [nanmean(feats) nanstd(feats) nanmedian(feats) prctile(feats,5)./prctile(feats,95)];
 
 
 function [CGTfeats] = extract_CGT_feats(bounds)
