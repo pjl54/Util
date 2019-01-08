@@ -174,19 +174,19 @@ end
 vfeature(1) = std(area);
 vfeature(2) = mean(area);
 % vfeature(3) = min(area) / max(area);
-vfeature(3) = prctile(area,.05) / prctile(area,.95);
+vfeature(3) = prctile(area,5) / prctile(area,95);
 vfeature(4) = 1 - ( 1 / (1 + (vfeature(1) / vfeature(2))) );
 
 vfeature(5) = std(perimdist);
 vfeature(6) = mean(perimdist);
 % vfeature(7) = min(perimdist) / max(perimdist);
-vfeature(7) = prctile(perimdist,.05) / prctile(perimdist,.95);
+vfeature(7) = prctile(perimdist,5) / prctile(perimdist,95);
 vfeature(8) = 1 - ( 1 / (1 + (vfeature(5) / vfeature(6))) );
 
 vfeature(9) = std(chorddist);
 vfeature(10) = mean(chorddist);
 % vfeature(11) = min(chorddist) / max(chorddist);
-vfeature(11) = prctile(chorddist,.05) / prctile(chorddist,.95);
+vfeature(11) = prctile(chorddist,5) / prctile(chorddist,95);
 vfeature(12) = 1 - ( 1 / (1 + (vfeature(9) / vfeature(10))) );
 
 % Delaunay
@@ -206,13 +206,13 @@ for i = 1:size(del,1)
 end
 
 % vfeature(13) = min(sidelen) / max(sidelen);
-vfeature(13) = prctile(sidelen,.05) / prctile(sidelen,.95);
+vfeature(13) = prctile(sidelen,5) / prctile(sidelen,95);
 vfeature(14) = std(sidelen);
 vfeature(15) = mean(sidelen);
 vfeature(16) = 1 - (1 / (1 + (vfeature(14) / vfeature(15)) ) );
 
 % vfeature(17) = min(triarea) / max(triarea);
-vfeature(17) = prctile(triarea,.05) / prctile(triarea,.95);
+vfeature(17) = prctile(triarea,5) / prctile(triarea,95);
 vfeature(18) = std(triarea);
 vfeature(19) = mean(triarea);
 vfeature(20) = 1 - (1 / (1 + (vfeature(18) / vfeature(19))) );
@@ -225,7 +225,7 @@ vfeature(20) = 1 - (1 / (1 + (vfeature(18) / vfeature(19))) );
 vfeature(21) = mean(mst.edgelen);
 vfeature(22) = std(mst.edgelen);
 % vfeature(23) = min(mst.edgelen) / max(mst.edgelen);
-vfeature(23) = prctile(mst.edgelen,.05) / prctile(mst.edgelen,.95);
+vfeature(23) = prctile(mst.edgelen,5) / prctile(mst.edgelen,95);
 vfeature(24) = 1 - ( 1 / ( 1 + (vfeature(22)/vfeature(21)) ) );
 
 % Nuclear Features
