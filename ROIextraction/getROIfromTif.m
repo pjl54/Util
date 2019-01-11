@@ -60,42 +60,51 @@ try
         imgHeights(k) = omeMeta.getPixelsSizeY(k-1).getValue();
     end
     baseMPP = min(imgMPPs);
+    
+    % Only consider layers larger than the desired output, downsize later if
+    % needed.
+    validLayers = find((outputMPP - imgMPPs) >= 0);
+    
+    if(isempty(validLayers))
+        fprintf('Warning: outputMPP is lower than minimum image MPP of %.2f \n',min(imgMPPs))
+        [~,targetLayer] = min(imgMPPs);
+    else
+        [~,vTarget] = min(abs(imgMPPs(validLayers) - outputMPP));
+        targetLayer = validLayers(vTarget);
+    end
+    matlabTargetLayer = targetLayer;
+    resFactor = baseMPP / outputMPP;
+    
 catch
     fprintf('BioFormats failed, trying Openslide \n');
-    imgInfo = imfinfo(imgPath);
-    baseMPP = str2double(openslide_get_property_value(openslide_open(imgPath),'openslide.mpp-x'));
-    imgWidths = [imgInfo.Width];
-    imgHeights = [imgInfo.Height];
-    imgMPPs = baseMPP .*(max(imgWidths)./imgWidths);
+%     imgInfo = imfinfo(imgPath);
+    slidePtr = openslide_open(imgPath);
+    baseMPP = str2double(openslide_get_property_value(slidePtr,'openslide.mpp-x'));
+    resFactor = baseMPP / outputMPP;
+    openslideTargetLayer = openslide_get_best_level_for_downsample(slidePtr, 1/resFactor);
+    matlabTargetLayer = openslideTargetLayer + 1;
+    [baseMPP,mppY,width,height,numberOfLevels,downsampleFactors,objectivePower] = openslide_get_slide_properties(slidePtr);
+    imgMPPs = baseMPP .* downsampleFactors;
+%     imgWidths = [imgInfo.Width];
+%     imgHeights = [imgInfo.Height];
+%     imgMPPs = baseMPP .*(max(imgWidths)./imgWidths);
 end
 
-resFactor = baseMPP / outputMPP;
-
-% Only consider layers larger than the desired output, downsize later if
-% needed.
-validLayers = find((outputMPP - imgMPPs) >= 0);
-
-if(isempty(validLayers))
-    fprintf('Warning: outputMPP is lower than minimum image MPP of %.2f \n',min(imgMPPs))
-    [~,targetLayer] = min(imgMPPs);
-else
-    [~,vTarget] = min(abs(imgMPPs(validLayers) - outputMPP));
-    targetLayer = validLayers(vTarget);
-end
-
-amountToReduceByLater = imgMPPs(targetLayer) / outputMPP; % if targetLayer doesn't match outputMag
-targetAnnoDown = imgMPPs(targetLayer) / baseMPP; % how much to downsize annotation by when getting region, corresponds to magnification of targetLayer
 
 
-imgExtension = strsplit(imgPath,'.');
-imgExtension = imgExtension{end};
+amountToReduceByLater = imgMPPs(matlabTargetLayer) / outputMPP; % if targetLayer doesn't match outputMag
+targetAnnoDown = imgMPPs(matlabTargetLayer) / baseMPP; % how much to downsize annotation by when getting region, corresponds to magnification of targetLayer
+
+
+    imgExtension = strsplit(imgPath,'.');
+    imgExtension = imgExtension{end};
 if(any(strcmp(imgExtension,formatsThatNeedBF)))
-%     x = min(annotation.X);
-%     y = min(annotation.Y);
-%     w = max(annotation.X)-min(annotation.X);
-%     h = max(annotation.Y)-min(annotation.Y);
-%     
-
+    %     x = min(annotation.X);
+    %     y = min(annotation.Y);
+    %     w = max(annotation.X)-min(annotation.X);
+    %     h = max(annotation.Y)-min(annotation.Y);
+    %
+    
     x = min(annotation.X/targetAnnoDown);
     y = min(annotation.Y/targetAnnoDown);
     w = max(annotation.X/targetAnnoDown)-min(annotation.X/targetAnnoDown);
@@ -111,23 +120,33 @@ if(any(strcmp(imgExtension,formatsThatNeedBF)))
     %     rgb = cat(3,r,g,b);
     
 else
-    % Need to account for possible rotation
-    switch rotation
-        case 0
-            rgb = imread(imgPath,'Index',targetLayer,'PixelRegion',{[round(min(annotation.Y/targetAnnoDown)),round(max(annotation.Y/targetAnnoDown))],...
-                [round(min(annotation.X/targetAnnoDown)),round(max(annotation.X/targetAnnoDown))]});
-        case 270
-            rgb = imread(imgPath,'Index',targetLayer,'PixelRegion',{[round(imgHeights(targetLayer) - max(annotation.X/targetAnnoDown)),round(imgHeights(targetLayer) - min(annotation.X/targetAnnoDown))],...
-                [round(min(annotation.Y/targetAnnoDown)),round(max(annotation.Y/targetAnnoDown))]});
-            
-            %                     case 0
-            %             rgb = imread(imgPath,'Index',targetLayer,'PixelRegion',{[round(min(annotation.Y .* targetAnnoDown)),round(max(annotation.Y .* targetAnnoDown))],...
-            %                 [round(min(annotation.X .* targetAnnoDown)),round(max(annotation.X .* targetAnnoDown))]});
-            %         case 270
-            %             rgb = imread(imgPath,'Index',targetLayer,'PixelRegion',{[round(imgHeights(targetLayer) - max(annotation.X .* targetAnnoDown)),round(imgHeights(targetLayer) - min(annotation.X .* targetAnnoDown))],...
-            %                 [round(min(annotation.Y .* targetAnnoDown)),round(max(annotation.Y .* targetAnnoDown))]});
-            
-    end
+    
+%     try
+        
+        Xstart = round(min(annotation.X/targetAnnoDown));
+        Xend = round(max(annotation.X/targetAnnoDown));
+        Xlength = abs(Xstart - Xend);
+        
+        Ystart = round(min(annotation.Y/targetAnnoDown));
+        Yend = round(max(annotation.Y/targetAnnoDown));
+        Ylength = abs(Ystart - Yend);
+        
+        slideread = openslide_read_region(slidePtr,Xstart,Ystart,Xlength,Ylength,'level',openslideTargetLayer);
+        rgb = slideread(:,:,2:4);        
+        
+%     catch
+%         fprintf('Openslide openning failed, reverting to imread')
+        % Need to account for possible rotation
+%         switch rotation
+%             case 0
+%                 rgb = imread(imgPath,'Index',targetLayer,'PixelRegion',{[round(min(annotation.Y/targetAnnoDown)),round(max(annotation.Y/targetAnnoDown))],...
+%                     [round(min(annotation.X/targetAnnoDown)),round(max(annotation.X/targetAnnoDown))]});
+%             case 270
+%                 rgb = imread(imgPath,'Index',targetLayer,'PixelRegion',{[round(imgHeights(targetLayer) - max(annotation.X/targetAnnoDown)),round(imgHeights(targetLayer) - min(annotation.X/targetAnnoDown))],...
+%                     [round(min(annotation.Y/targetAnnoDown)),round(max(annotation.Y/targetAnnoDown))]});
+%                 
+%         end
+%     end
 end
 
 rgb = imrotate(rgb,rotation);
