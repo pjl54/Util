@@ -1,0 +1,242 @@
+Voronoi: Area std.
+Voronoi: Area average
+Voronoi: Area 5% / 95%
+Voronoi: Area disorder
+Voronoi: Perimeter std.
+Voronoi: Perimeter average
+Voronoi: Perimeter 5% / 95%
+Voronoi: Perimeter disorder
+Voronoi: Chord std.
+Voronoi: Chord average
+Voronoi: Chord 5% / 95%
+Voronoi: Chord disorder
+Delaunay: Side length 5% / 95%
+Delaunay: Side length std.
+Delaunay: Side length average
+Delaunay: Side length disorder
+Delaunay: Triangle area 5% / 95%
+Delaunay: Triangle area std.
+Delaunay: Triangle area average
+Delaunay: Triangle area disorder
+MST: Edge length average
+MST: Edge length std.
+MST: Edge length 5% / 95%
+MST: Edge length disorder
+Arch: Area of polygons
+Arch: Number of polygons
+Arch: Density of polygons
+Arch: Average distance to 3 nearest neighbors
+Arch: Average distance to 5 nearest neighbors
+Arch: Average distance to 7 nearest neighbors
+Arch: Std. distance to 3 nearest neighbors
+Arch: Std. distance to 5 nearest neighbors
+Arch: Std. distance to 7 nearest neighbors
+Arch: Disorder of distance to 3 nearest neighbors
+Arch: Disorder of distance to 5 nearest neighbors
+Arch: Disorder of distance to 7 nearest neighbors
+Arch: Avg. nearest neighbors in a 10 pixel radius
+Arch: Avg. nearest neighbors in a 20 pixel radius
+Arch: Avg. nearest neighbors in a 30 pixel radius
+Arch: Avg. nearest neighbors in a 40 pixel radius
+Arch: Avg. nearest neighbors in a 50 pixel radius
+Arch: Std. neighbors in 10 pixel radius
+Arch: Std. neighbors in 20 pixel radius
+Arch: Std. neighbors in 30 pixel radius
+Arch: Std. neighbors in  40 pixel radius
+Arch: Std. neighbors in 50 pixel radius
+Arch: Disorder neighbors in 10 pixel radius
+Arch: Disorder neighbors in 20 pixel radius
+Arch: Disorder neighbors in 30 pixel radius
+Arch: Disorder neighbors in 40 pixel radius
+Arch: Disorder neighbors in 50 pixel radius
+Shape: Mean area ratio
+Shape: Mean distance ratio
+Shape: Mean Std. of distance
+Shape: Mean variance of distance
+Shape: Mean distance ratio
+Shape: Mean perimeter ratio
+Shape: Mean smoothness
+Shape: Mean invariant moment 1
+Shape: Mean invariant moment 2
+Shape: Mean invariant moment 3
+Shape: Mean invariant moment 4
+Shape: Mean invariant moment 5
+Shape: Mean invariant moment 6
+Shape: Mean invariant moment 7
+Shape: Mean fractal dimension
+Shape: Mean Fourier descriptor 1
+Shape: Mean Fourier descriptor 2
+Shape: Mean Fourier descriptor 3
+Shape: Mean Fourier descriptor 4
+Shape: Mean Fourier descriptor 5
+Shape: Mean Fourier descriptor 6
+Shape: Mean Fourier descriptor 7
+Shape: Mean Fourier descriptor 8
+Shape: Mean Fourier descriptor 9
+Shape: Mean Fourier descriptor 10
+Shape: Std. area ratio
+Shape: Std. distance ratio
+Shape: Std. Std. of distance
+Shape: Std. variance of distance
+Shape: Std. distance ratio
+Shape: Std. perimeter ratio
+Shape: Std. smoothness
+Shape: Std. invariant moment 1
+Shape: Std. invariant moment 2
+Shape: Std. invariant moment 3
+Shape: Std. invariant moment 4
+Shape: Std. invariant moment 5
+Shape: Std. invariant moment 6
+Shape: Std. invariant moment 7
+Shape: Std. fractal dimension
+Shape: Std. Fourier descriptor 1
+Shape: Std. Fourier descriptor 2
+Shape: Std. Fourier descriptor 3
+Shape: Std. Fourier descriptor 4
+Shape: Std. Fourier descriptor 5
+Shape: Std. Fourier descriptor 6
+Shape: Std. Fourier descriptor 7
+Shape: Std. Fourier descriptor 8
+Shape: Std. Fourier descriptor 9
+Shape: Std. Fourier descriptor 10
+Shape: Median area ratio
+Shape: Median distance ratio
+Shape: Median Std. of distance
+Shape: Median variance of distance
+Shape: Median distance ratio
+Shape: Median perimeter ratio
+Shape: Median smoothness
+Shape: Median invariant moment 1
+Shape: Median invariant moment 2
+Shape: Median invariant moment 3
+Shape: Median invariant moment 4
+Shape: Median invariant moment 5
+Shape: Median invariant moment 6
+Shape: Median invariant moment 7
+Shape: Median fractal dimension
+Shape: Median Fourier descriptor 1
+Shape: Median Fourier descriptor 2
+Shape: Median Fourier descriptor 3
+Shape: Median Fourier descriptor 4
+Shape: Median Fourier descriptor 5
+Shape: Median Fourier descriptor 6
+Shape: Median Fourier descriptor 7
+Shape: Median Fourier descriptor 8
+Shape: Median Fourier descriptor 9
+Shape: Median Fourier descriptor 10
+Shape: 5% / 95% area ratio
+Shape: 5% / 95% distance ratio
+Shape: 5% / 95% std. of distance
+Shape: 5% / 95% variance of distance
+Shape: 5% / 95% distance ratio
+Shape: 5% / 95% perimeter ratio
+Shape: 5% / 95% smoothness
+Shape: 5% / 95% invariant moment 1
+Shape: 5% / 95% invariant moment 2
+Shape: 5% / 95% invariant moment 3
+Shape: 5% / 95% invariant moment 4
+Shape: 5% / 95% invariant moment 5
+Shape: 5% / 95% invariant moment 6
+Shape: 5% / 95% invariant moment 7
+Shape: 5% / 95% fractal dimension
+Shape: 5% / 95% Fourier descriptor 1
+Shape: 5% / 95% Fourier descriptor 2
+Shape: 5% / 95% Fourier descriptor 3
+Shape: 5% / 95% Fourier descriptor 4
+Shape: 5% / 95% Fourier descriptor 5
+Shape: 5% / 95% Fourier descriptor 6
+Shape: 5% / 95% Fourier descriptor 7
+Shape: 5% / 95% Fourier descriptor 8
+Shape: 5% / 95% Fourier descriptor 9
+Shape: 5% / 95% Fourier descriptor 10
+Cgt: Mean tensor contrast energy
+Cgt: Std. tensor contrast energy
+Cgt: Range tensor contrast energy
+Cgt: Mean tensor contrast inverse moment
+Cgt: Std. tensor contrast inverse moment
+Cgt: Range tensor contrast inverse moment
+Cgt: Mean tensor contrast average
+Cgt: Std. tensor contrast average
+Cgt: Range tensor contrast average
+Cgt: Mean tensor contrast var
+Cgt: Std. tensor contrast var
+Cgt: Range tensor contrast var
+Cgt: Mean tensor contrast entropy
+Cgt: Std. tensor contrast entropy
+Cgt: Range tensor contrast entropy
+Cgt: Mean tensor intensity average
+Cgt: Std. tensor intensity average
+Cgt: Range tensor intensity average
+Cgt: Mean tensor intensity variance
+Cgt: Std. tensor intensity variance
+Cgt: Range tensor intensity variance
+Cgt: Mean tensor intensity entropy
+Cgt: Std. tensor intensity entropy
+Cgt: Range tensor intensity entropy
+Cgt: Mean tensor entropy
+Cgt: Std. tensor entropy
+Cgt: Range tensor entropy
+Cgt: Mean tensor energy
+Cgt: Std. tensor energy
+Cgt: Range tensor energy
+Cgt: Mean tensor correlation
+Cgt: Std. tensor correlation
+Cgt: Range tensor correlation
+Cgt: Mean tensor information measure 1
+Cgt: Std. tensor information measure 1
+Cgt: Range tensor information measure 1
+Cgt: Mean tensor information measure 2
+Cgt: Std. tensor information measure 2
+Cgt: Range tensor information measure 2
+Sub-Graph: Number of nodes
+Sub-Graph: Number of edges
+Sub-Graph: Average degree
+Sub-Graph: Average eccentricity
+Sub-Graph: Diameter
+Sub-Graph: Radius
+Sub-Graph: Average eccentricity 90%
+Sub-Graph: Diameter 90%
+Sub-Graph: Radius 90%
+Sub-Graph: Average path length
+Sub-Graph: Clustering coefficient c
+Sub-Graph: Clustering coefficient d
+Sub-Graph: Clustering coefficient e
+Sub-Graph: Number of connected components
+Sub-Graph: Giant connected component ratio
+Sub-Graph: Average connected component size
+Sub-Graph: Number isolated nodes
+Sub-Graph: Percentage isolated nodes
+Sub-Graph: Number end nodes
+Sub-Graph: Percentage end nodes
+Sub-Graph: Number central nodes
+Sub-Graph: Percentage central nodes
+Sub-Graph: Mean edge length
+Sub-Graph: Std. edge length
+Sub-Graph: Skewness edge length
+Sub-Graph: Kurtosis edge length
+Haralick: Mean contrast energy
+Haralick: Std. contrast energy
+Haralick: Mean contrast inverse moment
+Haralick: Std. contrast inverse moment
+Haralick: Mean  contrast average
+Haralick: Std. contrast average
+Haralick: Mean contrast var
+Haralick: Std. contrast var
+Haralick: Mean contrast entropy
+Haralick: Std. contrast entropy
+Haralick: Mean intensity average
+Haralick: Std. intensity average
+Haralick: Mean intensity variance
+Haralick: Std. intensity variance
+Haralick: Mean intensity entropy
+Haralick: Std. intensity entropy
+Haralick: Mean entropy
+Haralick: Std. entropy
+Haralick: Mean energy
+Haralick: Std. energy
+Haralick: Mean correlation
+Haralick: Std. correlation
+Haralick: Mean information measure 1
+Haralick: Std. information measure 1
+Haralick: Mean information measure 2
+Haralick: Std. information measure 2
