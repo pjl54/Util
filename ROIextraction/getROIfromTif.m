@@ -31,8 +31,7 @@ if(~isstring(imgPath) && ~ischar(imgPath))
     imgPath = 'dummy.czi';
 end
 
-formatsThatNeedBF = {'czi','ndpi'}; % These are formats that aren't supported by imread or openslide
-% formatsThatNeedOpenslide = {'.tif'};
+formatsThatNeedBF = {'czi','ndpi','scn'}; % These are formats that aren't supported by imread or openslide. scn is readable by openslide but it gets the slide dimensions wrong
 
 % Matlab rotates some files (.scn, .tiff) when reading them in, need to undo this
 if(strcmp(imgPath(end-3:end),'.scn'))
@@ -43,7 +42,9 @@ else
     rotation = 0;
 end
 
-try
+imgExtension = strsplit(imgPath,'.');
+imgExtension = imgExtension{end};
+if(any(strcmp(imgExtension,formatsThatNeedBF)))
     if(~exist('reader','var'))
         reader = bfGetReader(imgPath);
     end
@@ -59,6 +60,10 @@ try
         imgWidths(k) = omeMeta.getPixelsSizeX(k-1).getValue();
         imgHeights(k) = omeMeta.getPixelsSizeY(k-1).getValue();
     end
+    
+    % Make 0.999 = 1
+    imgMPPs = round(imgMPPs,3);
+    
     baseMPP = min(imgMPPs);
     
     % Only consider layers larger than the desired output, downsize later if
@@ -75,19 +80,26 @@ try
     matlabTargetLayer = targetLayer;
     resFactor = baseMPP / outputMPP;
     
-catch
-    fprintf('BioFormats failed, trying Openslide \n');
-%     imgInfo = imfinfo(imgPath);
+else
+    %     fprintf('BioFormats failed, trying Openslide \n');
+    %     imgInfo = imfinfo(imgPath);
     slidePtr = openslide_open(imgPath);
     baseMPP = str2double(openslide_get_property_value(slidePtr,'openslide.mpp-x'));
     resFactor = baseMPP / outputMPP;
-    openslideTargetLayer = openslide_get_best_level_for_downsample(slidePtr, 1/resFactor);
-    matlabTargetLayer = openslideTargetLayer + 1;
+    
     [baseMPP,mppY,width,height,numberOfLevels,downsampleFactors,objectivePower] = openslide_get_slide_properties(slidePtr);
     imgMPPs = baseMPP .* downsampleFactors;
-%     imgWidths = [imgInfo.Width];
-%     imgHeights = [imgInfo.Height];
-%     imgMPPs = baseMPP .*(max(imgWidths)./imgWidths);
+    
+    [~,matlabTargetLayer] = min(abs(imgMPPs - outputMPP));
+    %     openslideTargetLayer = openslide_get_best_level_for_downsample(slidePtr, 1/resFactor);
+    %     matlabTargetLayer = openslideTargetLayer + 1;
+    openslideTargetLayer = matlabTargetLayer - 1;
+    
+    %     imgHeights = round(double(width) ./ downsampleFactors);
+    imgHeights = round(double(height) ./ downsampleFactors);
+    %     imgWidths = [imgInfo.Width];
+    %     imgHeights = [imgInfo.Height];
+    %     imgMPPs = baseMPP .*(max(imgWidths)./imgWidths);
 end
 
 
@@ -96,8 +108,8 @@ amountToReduceByLater = imgMPPs(matlabTargetLayer) / outputMPP; % if targetLayer
 targetAnnoDown = imgMPPs(matlabTargetLayer) / baseMPP; % how much to downsize annotation by when getting region, corresponds to magnification of targetLayer
 
 
-    imgExtension = strsplit(imgPath,'.');
-    imgExtension = imgExtension{end};
+imgExtension = strsplit(imgPath,'.');
+imgExtension = imgExtension{end};
 if(any(strcmp(imgExtension,formatsThatNeedBF)))
     %     x = min(annotation.X);
     %     y = min(annotation.Y);
@@ -105,12 +117,25 @@ if(any(strcmp(imgExtension,formatsThatNeedBF)))
     %     h = max(annotation.Y)-min(annotation.Y);
     %
     
-    x = min(annotation.X/targetAnnoDown);
-    y = min(annotation.Y/targetAnnoDown);
-    w = max(annotation.X/targetAnnoDown)-min(annotation.X/targetAnnoDown);
-    h = max(annotation.Y/targetAnnoDown)-min(annotation.Y/targetAnnoDown);
+    switch rotation
+        case 0
+            x = min(annotation.X/targetAnnoDown);
+            y = min(annotation.Y/targetAnnoDown);
+            w = max(annotation.X/targetAnnoDown)-min(annotation.X/targetAnnoDown);
+            h = max(annotation.Y/targetAnnoDown)-min(annotation.Y/targetAnnoDown);
+            
+            x = round(x); y = round(y); w = round(w); h = round(h);
+            
+        case 270
+            
+            y = imgHeights(matlabTargetLayer) - max(annotation.X/targetAnnoDown);
+            x = min(annotation.Y/targetAnnoDown);
+            h = max(annotation.X/targetAnnoDown) - min(annotation.X/targetAnnoDown);
+            w = max(annotation.Y/targetAnnoDown)-min(annotation.Y/targetAnnoDown);
+            
+            x = round(x); y = round(y); w = round(w); h = round(h);
+    end
     
-    x = round(x); y = round(y); w = round(w); h = round(h);
     
     ef = bfopenSpecificLayer(reader,targetLayer,x,y,w,h);
     rgb = cat(3,ef{1}{1,1},ef{1}{2,1},ef{1}{3,1});
@@ -121,32 +146,30 @@ if(any(strcmp(imgExtension,formatsThatNeedBF)))
     
 else
     
-%     try
-        
-        Xstart = round(min(annotation.X/targetAnnoDown));
-        Xend = round(max(annotation.X/targetAnnoDown));
-        Xlength = abs(Xstart - Xend);
-        
-        Ystart = round(min(annotation.Y/targetAnnoDown));
-        Yend = round(max(annotation.Y/targetAnnoDown));
-        Ylength = abs(Ystart - Yend);
-        
-        slideread = openslide_read_region(slidePtr,Xstart,Ystart,Xlength,Ylength,'level',openslideTargetLayer);
-        rgb = slideread(:,:,2:4);        
-        
-%     catch
-%         fprintf('Openslide openning failed, reverting to imread')
-        % Need to account for possible rotation
-%         switch rotation
-%             case 0
-%                 rgb = imread(imgPath,'Index',targetLayer,'PixelRegion',{[round(min(annotation.Y/targetAnnoDown)),round(max(annotation.Y/targetAnnoDown))],...
-%                     [round(min(annotation.X/targetAnnoDown)),round(max(annotation.X/targetAnnoDown))]});
-%             case 270
-%                 rgb = imread(imgPath,'Index',targetLayer,'PixelRegion',{[round(imgHeights(targetLayer) - max(annotation.X/targetAnnoDown)),round(imgHeights(targetLayer) - min(annotation.X/targetAnnoDown))],...
-%                     [round(min(annotation.Y/targetAnnoDown)),round(max(annotation.Y/targetAnnoDown))]});
-%                 
-%         end
-%     end
+    Xstart = round(min(annotation.X/targetAnnoDown));
+    Xend = round(max(annotation.X/targetAnnoDown));
+    Xlength = abs(Xstart - Xend);
+    
+    Ystart = round(min(annotation.Y/targetAnnoDown));
+    Yend = round(max(annotation.Y/targetAnnoDown));
+    Ylength = abs(Ystart - Yend);
+    
+    slideread = openslide_read_region(slidePtr,Xstart,Ystart,Xlength,Ylength,'level',openslideTargetLayer);
+    rgb = slideread(:,:,2:4);
+    
+    %     catch
+    %         fprintf('Openslide openning failed, reverting to imread')
+    % Need to account for possible rotation
+    %         switch rotation
+    %             case 0
+    %                 rgb = imread(imgPath,'Index',targetLayer,'PixelRegion',{[round(min(annotation.Y/targetAnnoDown)),round(max(annotation.Y/targetAnnoDown))],...
+    %                     [round(min(annotation.X/targetAnnoDown)),round(max(annotation.X/targetAnnoDown))]});
+    %             case 270
+    %                 rgb = imread(imgPath,'Index',targetLayer,'PixelRegion',{[round(imgHeights(targetLayer) - max(annotation.X/targetAnnoDown)),round(imgHeights(targetLayer) - min(annotation.X/targetAnnoDown))],...
+    %                     [round(min(annotation.Y/targetAnnoDown)),round(max(annotation.Y/targetAnnoDown))]});
+    %
+    %         end
+    %     end
 end
 
 rgb = imrotate(rgb,rotation);
