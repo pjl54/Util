@@ -60,11 +60,18 @@ if(any(strcmp(imgExtension,formatsThatNeedBF)))
         imgWidths(k) = omeMeta.getPixelsSizeX(k-1).getValue();
         imgHeights(k) = omeMeta.getPixelsSizeY(k-1).getValue();
     end
+       
     
     % Make 0.999 = 1
     imgMPPs = round(imgMPPs,3);
     
     baseMPP = min(imgMPPs);
+    
+    % if the physical pixel size was untrustworthy
+    if(length(unique(imgMPPs)) == 1)        
+        imgMPPs = baseMPP .* max(imgWidths)./imgWidths;
+        imgMPPs = round(imgMPPs,3);
+    end
     
     % Only consider layers larger than the desired output, downsize later if
     % needed.
