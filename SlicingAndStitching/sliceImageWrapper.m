@@ -4,6 +4,8 @@
 function sliceImageWrapper(imgsDir,refImgPath,unseggedPatchDir,problemDir,finishedFlagDir,outputMPP,buffer,modelInputSize,catagoriesToSlice,oneRegionPerCat,imageExtension)
 
 % baseDir = '/mnt/pan/Data7/pjl54/prostateNuc/caffe/PennRacial';
+% baseDir = '/mnt/pan/Data7/pjl54/prostateNuc/caffeBenign/Penn80';
+% addpath(genpath('~/segmentExtract'))
 % baseDir = '/mnt/pan/Data7/pjl54/prostateNuc/caffe/TCGA';
 % baseDir = '/mnt/pan/Data7/pjl54/prostateNuc/caffe/Janaki';
 % imgsDir = '/mnt/projects/CSE_BME_AXM788/data/TCGA_PRAD/2018Jan14'
@@ -33,11 +35,17 @@ function sliceImageWrapper(imgsDir,refImgPath,unseggedPatchDir,problemDir,finish
 
 pause(rand*5); % There's a race condition in writing files soooooo...
 
-varNames = {'outputMPP','buffer','modelInputSize','catagoriesToSlice','oneRegionPerCat','conThresh','smallSizeThresh','bigSizeThresh','featsToExtract'};
+varNames = {'outputMPP','buffer','modelInputSize','oneRegionPerCat','conThresh','smallSizeThresh','bigSizeThresh','featsToExtract'};
 for(k = 1:length(varNames))
     if(exist(varNames{k},'var') && ischar(eval(varNames{k})))
         eval([varNames{k} '= str2num(' varNames{k} ');']);
     end
+end
+
+if(strcmpi(catagoriesToSlice,'yellow'))
+    catagoriesToSlice = 1;
+elseif(strcmpi(catagoriesToSlice,'green'))
+    catagoriesToSlice = 2;
 end
 
 if(~exist('imageExtension','var') || isempty(imageExtension))
@@ -55,13 +63,17 @@ if(~exist('oneRegionPerCat','var'))
 end
 
 if(~isempty(refImgPath))
-    refImg = imread(refImgPath);
-    refMask = rgb2gray(refImg)<190;
-    %%
-    refChannel = cell(1,3);
-    for(channel = 1:3)
-        refChannel{channel} = refImg(:,:,channel);
-        masterHist(channel,:) = histcounts(refChannel{channel}(find(refMask)),256);
+    if(any(strfind(refImgPath,'.png')))
+        refImg = imread(refImgPath);
+        refMask = rgb2gray(refImg)<190;
+        %%
+        refChannel = cell(1,3);
+        for(channel = 1:3)
+            refChannel{channel} = refImg(:,:,channel);
+            masterHist(channel,:) = histcounts(refChannel{channel}(find(refMask)),256);
+        end
+    else
+        load(refImgPath,'masterHist');
     end
 else
     masterHist = [];
@@ -81,11 +93,11 @@ for(a = 1:length(imgs))
     iMadeWorkName = false;
     try
         img = [imgsDir filesep imgs(a).name];
-
+        
         name = imgs(a).name;
         dots = regexp(name,'[^.]*$');
         name = name(1:dots-2);
-
+        
         fprintf('Checking %s \n',name);
         
         if(~strcmp(imageExtension,'.czi'))

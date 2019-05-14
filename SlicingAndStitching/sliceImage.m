@@ -5,7 +5,7 @@ if(exist('colorNormTemplate','var'))
         colorNormTemplate = imread(colorNormTemplate);
     end
     
-    if(numel(colorNormTemplate) == 3)
+    if(isempty(setdiff(size(colorNormTemplate),[3 256])))
         masterHist = colorNormTemplate;
         clear('colorNormTemplate')
     else
