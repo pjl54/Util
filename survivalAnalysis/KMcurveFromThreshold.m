@@ -30,10 +30,13 @@ markerColors = [0.3639, 0.5755, 0.7484; 0.9153, 0.2816, 0.2878];
 if(size(scores,1) ~= size(labels,1))
     scores = reshape(scores,[size(labels,1),size(labels,2)]);
 end
-if(size(labels,1) ~= size(labels,1))
-    labels = reshape(scores,[size(labels,1),size(labels,2)]);
+if(size(timeToEvent,1) ~= size(labels,1))
+    timeToEvent = reshape(timeToEvent,[size(labels,1),size(labels,2)]);
 end
 
+scores = reshape(scores,[1,length(scores)]);
+timeToEvent = reshape(timeToEvent,[1,length(timeToEvent)]);
+labels = reshape(labels,[1,length(labels)]);
 
 if(dotPlot)
     % markerColors = linspecer(2)
@@ -109,7 +112,7 @@ if(KMPlot)
     else
         
         if(~isempty(MatSurvOpt))
-            [pval,~,stats] = MatSurv(timeToEvent, labels, tryCell,'PairWiseP',1,'CensorLineColor',censorLineColors,'CensorLineWidth',1,'LineColor',linecolors,'XLabel',params.XLabel,'InvHR',1,'GroupOrder',fliplr(1:length(groupNames)),'Use_HR_MH',false,MatSurvOpt{:});
+            [pval,~,stats] = MatSurv(timeToEvent, labels, tryCell,'PairWiseP',1,'CensorLineColor',censorLineColors,'CensorLineWidth',1,'LineColor',linecolors,'XLabel',params.XLabel,'RT_Title','Number at risk','InvHR',1,'GroupOrder',fliplr(1:length(groupNames)),'Use_HR_MH',false,MatSurvOpt{:});
         else
             [pval,~,stats] = MatSurv(timeToEvent, labels, tryCell,'PairWiseP',1,'CensorLineColor',censorLineColors,'CensorLineWidth',1,'LineColor',linecolors,'XLabel',params.XLabel,'RT_Title','Number at risk','InvHR',1,'GroupOrder',fliplr(1:length(groupNames)),'Use_HR_MH',false);
         end
