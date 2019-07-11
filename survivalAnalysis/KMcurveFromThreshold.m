@@ -30,6 +30,10 @@ markerColors = [0.3639, 0.5755, 0.7484; 0.9153, 0.2816, 0.2878];
 if(size(scores,1) ~= size(labels,1))
     scores = reshape(scores,[size(labels,1),size(labels,2)]);
 end
+if(size(labels,1) ~= size(labels,1))
+    labels = reshape(scores,[size(labels,1),size(labels,2)]);
+end
+
 
 if(dotPlot)
     % markerColors = linspecer(2)
