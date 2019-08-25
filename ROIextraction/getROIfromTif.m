@@ -29,8 +29,13 @@ function [ROI mask] = getROIfromTif(imgPath,annotation,outputMPP)
 if(~isstring(imgPath) && ~ischar(imgPath))
     reader = imgPath;
     imgPath = 'dummy.czi';
+else
+    if(~exist(imgPath,'file'))
+        error('Error: %s not found \n',imgPath)                
+    end
 end
 
+% BF is twice as fast a Openslide for ndpi images
 formatsThatNeedBF = {'czi','ndpi','scn'}; % These are formats that aren't supported by imread or openslide. scn is readable by openslide but it gets the slide dimensions wrong
 
 % Matlab rotates some files (.scn, .tiff) when reading them in, need to undo this
@@ -97,7 +102,14 @@ else
     [baseMPP,mppY,width,height,numberOfLevels,downsampleFactors,objectivePower] = openslide_get_slide_properties(slidePtr);
     imgMPPs = baseMPP .* downsampleFactors;
     
-    [~,matlabTargetLayer] = min(abs(imgMPPs - outputMPP));
+    validLayers = find((outputMPP - imgMPPs) >= 0);
+    if(isempty(validLayers))
+        fprintf('Warning: outputMPP is lower than minimum image MPP of %.2f \n',min(imgMPPs))
+        [~,matlabTargetLayer] = min(imgMPPs);
+    else
+        [~,vTarget] = min(abs(imgMPPs(validLayers) - outputMPP));
+        matlabTargetLayer = validLayers(vTarget);
+    end
     %     openslideTargetLayer = openslide_get_best_level_for_downsample(slidePtr, 1/resFactor);
     %     matlabTargetLayer = openslideTargetLayer + 1;
     openslideTargetLayer = matlabTargetLayer - 1;
