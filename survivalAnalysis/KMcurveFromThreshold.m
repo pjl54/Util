@@ -81,15 +81,18 @@ if(KMPlot)
     end
     
     if(isempty(linecolors))
-        if(exist('linspecer.m','file'))
+        
+        if(length(thresholds)==1)
+            linecolors = markerColors;        
+        elseif(exist('linspecer.m','file'))
             linecolors = linspecer(length(thresholds)+1);
         else
             linecolors = lines(length(thresholds)+1);
         end
         
         % Make sure greenest color is lowest risk
-        [~,blueorder] = sort(linecolors(:,2),'descend');
-        linecolors = linecolors(blueorder,:);
+        [~,greenorder] = sort(linecolors(:,2),'descend');
+        linecolors = linecolors(greenorder,:);
     end
     
     censorLineColors = repmat([0,0,0],[length(thresholds)+1,1]);
@@ -103,6 +106,14 @@ if(KMPlot)
             tryCell(groupLabels == groups(k)) = groupNames(k);
         end
     end
+        
+    MatSurvOrder = unique(tryCell);
+    if(isempty(groupNames))
+        groupNames = fliplr(MatSurvOrder);
+    end
+    [~,groupOrder] = ismember(groupNames,MatSurvOrder);
+%     groupOrder = fliplr(groupOrder);
+%     linecolors = linecolors(groupOrder,:);
     
     % [pval,~,stats] = MatSurv(timeToEvent, labels, tryCell,'PairWiseP',1,'CensorLineColor',censorLineColors,'CensorLineWidth',1,'LineColor',linecolors,'Xlabel','Time (days)','Title',TitleText,'RT_Title','Number at risk','InvHR',1,'GroupOrder',fliplr(1:length(groupNames)),'Use_HR_MH',false,'NoPlot',NoPlot);
     
@@ -112,9 +123,9 @@ if(KMPlot)
     else
         
         if(~isempty(MatSurvOpt))
-            [pval,~,stats] = MatSurv(timeToEvent, labels, tryCell,'PairWiseP',1,'CensorLineColor',censorLineColors,'CensorLineWidth',1,'LineColor',linecolors,'XLabel',params.XLabel,'RT_Title','Number at risk','InvHR',1,'GroupOrder',fliplr(1:length(groupNames)),'Use_HR_MH',false,MatSurvOpt{:});
+            [pval,~,stats] = MatSurv(timeToEvent, labels, tryCell,'PairWiseP',1,'CensorLineColor',censorLineColors,'CensorLineWidth',1,'LineColor',linecolors,'XLabel',params.XLabel,'RT_Title','Number at risk','InvHR',1,'GroupOrder',groupOrder,'Use_HR_MH',false,MatSurvOpt{:});
         else
-            [pval,~,stats] = MatSurv(timeToEvent, labels, tryCell,'PairWiseP',1,'CensorLineColor',censorLineColors,'CensorLineWidth',1,'LineColor',linecolors,'XLabel',params.XLabel,'RT_Title','Number at risk','InvHR',1,'GroupOrder',fliplr(1:length(groupNames)),'Use_HR_MH',false);
+            [pval,~,stats] = MatSurv(timeToEvent, labels, tryCell,'PairWiseP',1,'CensorLineColor',censorLineColors,'CensorLineWidth',1,'LineColor',linecolors,'XLabel',params.XLabel,'RT_Title','Number at risk','InvHR',1,'GroupOrder',groupOrder,'Use_HR_MH',false);
         end
         
         hr = stats.HR_logrank_Inv;
