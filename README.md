@@ -5,11 +5,7 @@
  # ROIextraction
  
  Matlab code for extracting annotated regions of interest from whole-slide images. You need either BioFormats or Openslide for getROIfromTif to work at all and need both of them to get full functionality. Annotations can be read directly from .czi files or from .xml files in the Aperio ImageScope format for all other image types.
- 
- # QuPathScripts
- 
- Some handy scripts I've put together for importing and exporting annotations to and from QuPath. Annotations exported using qupath_to_xml.groovy should be readable by getRegionsOfAnnotation.m in ROIextraction.
- 
+  
  # featureExtraction
  
  Matlab code for extracting 216 morphology features from object segmentations and 26 Haralick texture features. CGT and sub-graph features are tuned for 1.25X (8MPP) segmentations.
@@ -25,3 +21,7 @@
  # Visualization
  
  Tools for visualizing segmentation results and model performance. 
+
+# feature_stability
+
+Code for calculating feature stability as described in https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5076015/
