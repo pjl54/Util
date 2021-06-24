@@ -15,7 +15,7 @@ end
 
 smallerCount = max(smallerCount,length(labels)/3);
 
-threshs = threshs(round(smallerCount)/2:round(length(threshs)-smallerCount/2));
+threshs = threshs(round(smallerCount/2):round(length(threshs)-smallerCount/2));
 
 % if(exist('setThreshs','var') && ~isempty(setThreshs))
 %     threshs = threshs(threshs>setThreshs(end));
