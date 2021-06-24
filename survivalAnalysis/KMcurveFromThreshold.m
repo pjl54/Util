@@ -40,6 +40,7 @@ labels = reshape(labels,[1,length(labels)]);
 
 if(dotPlot)
     % markerColors = linspecer(2)
+    
     figure
     hold on
     
@@ -53,7 +54,7 @@ if(dotPlot)
     
     plots = [];
     for(z = uLabs)
-        plots(end+1) = scatter(tte(cls{z+1}),scores(cls{z+1}),25,'filled','MarkerFaceColor',markerColors(z+1,:),'MarkerEdgeColor','k')
+        plots(end+1) = scatter(tte(cls{z+1}),scores(cls{z+1}),25,'filled','MarkerFaceColor',markerColors(z+1,:),'MarkerEdgeColor','k');
     end
     xlabel('Years to event')
     ylabel('Risk score')
@@ -75,6 +76,7 @@ if(dotPlot)
 end
 
 if(KMPlot)
+        
     groupLabels = zeros(1,length(scores));
     for(thresh = 1:length(thresholds))
         groupLabels = groupLabels + (scores > thresholds(thresh));
@@ -133,5 +135,5 @@ if(KMPlot)
     
     if(exist('formatFigureMyWay.m','file'))
             formatFigureMyWay;
-    end
+    end    
 end
